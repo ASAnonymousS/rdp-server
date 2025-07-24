@@ -45,4 +45,4 @@ jobs:
       # This command will run and block, keeping the tunnel active.
       # You can find the public URL in the logs of this workflow step.
       - name: Create ngrok HTTP tunnel
-        run: .\ngrok.exe http 8080
+        run: .\ngrok\ngrok.exe http 8080
