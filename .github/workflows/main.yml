@@ -18,12 +18,13 @@ jobs:
         run: Invoke-WebRequest https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-windows-amd64.zip -OutFile ngrok.zip
 
       # Step 2: Extract the ngrok.exe from the downloaded zip file.
+      # This will likely create a directory named 'ngrok' containing the executable.
       - name: Extract ngrok
         run: Expand-Archive ngrok.zip
 
       # Step 3: Authenticate the ngrok agent.
       # This uses a secret (NGROK_AUTH_TOKEN) stored in your GitHub repository settings.
-      # This is required to use ngrok services like the HTTP tunnel.
+      # We specify the path to the executable inside the extracted folder.
       - name: Authenticate ngrok
         run: .\ngrok.exe authtoken $Env:NGROK_AUTH_TOKEN
         env:
