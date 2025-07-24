@@ -1,25 +1,47 @@
+# This workflow defines a continuous integration (CI) pipeline that runs on every push or manual trigger.
 name: CI
 
+# Controls when the workflow will run.
+# 'push' triggers the workflow on every push to any branch.
+# 'workflow_dispatch' allows you to run this workflow manually from the Actions tab.
 on: [push, workflow_dispatch]
 
 jobs:
+  # The 'build' job is the main job in this workflow.
   build:
-
+    # Specifies that the job will run on the latest version of Windows available on GitHub-hosted runners.
     runs-on: windows-latest
 
     steps:
-    - name: Download
-      run: Invoke-WebRequest https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-windows-amd64.zip -OutFile ngrok.zip
-    - name: Extract
-      run: Expand-Archive ngrok.zip
-    - name: Auth
-      run: .\ngrok\ngrok.exe authtoken $Env:NGROK_AUTH_TOKEN
-      env:
-        NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
-    - name: Enable TS
-      run: Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server'-name "fDenyTSConnections" -Value 0
-    - run: Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
-    - run: Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -name "UserAuthentication" -Value 1
-    - run: Set-LocalUser -Name "runneradmin" -Password (ConvertTo-SecureString -AsPlainText "P@ssw0rd!" -Force)
-    - name: Create Tunnel
-      run: .\ngrok\ngrok.exe tcp 3389
+      # Step 1: Download the ngrok executable as a zip file.
+      - name: Download ngrok
+        run: Invoke-WebRequest https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-windows-amd64.zip -OutFile ngrok.zip
+
+      # Step 2: Extract the ngrok.exe from the downloaded zip file.
+      - name: Extract ngrok
+        run: Expand-Archive ngrok.zip
+
+      # Step 3: Authenticate the ngrok agent.
+      # This uses a secret (NGROK_AUTH_TOKEN) stored in your GitHub repository settings.
+      # This is required to use ngrok services like the HTTP tunnel.
+      - name: Authenticate ngrok
+        run: .\ngrok.exe authtoken $Env:NGROK_AUTH_TOKEN
+        env:
+          NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
+
+      # Step 4: Create a simple index.html file to be served.
+      # This gives you a basic webpage to view when you access the tunnel.
+      - name: Create a dummy index.html
+        run: echo "<h1>Hello from your GitHub Actions Web Server!</h1>" > index.html
+
+      # Step 5: Start a simple Python HTTP server on port 8080.
+      # This command runs in the background, allowing the workflow to proceed to the next step.
+      # Python is pre-installed on GitHub's Windows runners.
+      - name: Start HTTP Server
+        run: Start-Process python -ArgumentList "-m http.server 8080" -NoNewWindow
+
+      # Step 6: Create an ngrok HTTP tunnel to expose the local server (port 8080) to the internet.
+      # This command will run and block, keeping the tunnel active.
+      # You can find the public URL in the logs of this workflow step.
+      - name: Create ngrok HTTP tunnel
+        run: .\ngrok.exe http 8080
